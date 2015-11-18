@@ -1,0 +1,19 @@
+$W -> $W1 *2   ; Start symbol is $W
+$W -> $W2 *1   ; A word can be a $W1, or a $W2, with type 1 occuring twice as often
+$W1 -> $W1 $S1 ; A type-1 word is a list of type-1 syllables ($S1)
+$W1 -> $S1     ; After every syllable, it's equally likely to add one more or stop there
+$W2 -> $W2 $S2 ; Type-2 words are built the same way
+$W2 -> $S2     ; Thus, 1/2 of all words are 1 syllable, 1/4 are 2 syllables, etc. 
+$S1 -> #C #V1  ; A type-1 syllable consist of a consonant and a type-1 vowel
+$S2 -> #C #V2  ; And similarly for type-2 syllables
+
+; This means that all syllables are striclty CV,
+; and all syllables in one word have the same kind
+; of vowel, which is how we enforce vowel harmony
+
+#C = <p t *2 k>     ; Consonants are <p>, <t>, <k>, with <t> twice as frequent as <p> or <k>
+#V1 = <a *2 o *2 u> ; Type-1 vowels are <a>, <o>, <u>, with <a> and <o> each twice as frequent as <u>
+#V2 = <i e>
+
+<t> #V1 -> <p k>    ; After a type-1 syllable starting with <t>, only allow <p> or <k>
+                    ; (with equal probability). Equivalent to the exclusion rule `<t> #V1 !> <t>`
