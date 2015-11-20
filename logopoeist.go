@@ -14,8 +14,8 @@ func main() {
 	var fname string
 	var wcount int
 
-    flag.StringVar(&fname, "file", "", "The name of the configuration file; defaults to standard input.")
-    flag.IntVar(&wcount, "n", 10, "The number of words to generate; defaults to 10.")
+	flag.StringVar(&fname, "file", "", "The name of the configuration file; defaults to standard input.")
+	flag.IntVar(&wcount, "n", 10, "The number of words to generate; defaults to 10.")
 
 	flag.Parse()
 
@@ -36,10 +36,10 @@ func main() {
 			fmt.Printf("Error: %s\n", err)
 		}
 	}()
-	
+
 	lex := lexer.Lex(bufio.NewReader(file), switchState)
 	interp := interpreter.Interpreter()
-	for command := range parser.Parse(lex, parseCommand) {
+	for command := range parser.Parse(lex) {
 		interp.Execute(command)
 	}
 

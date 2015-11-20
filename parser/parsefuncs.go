@@ -1,23 +1,7 @@
-package main
+package parser
 
 import "fmt"
 import . "github.com/conlang-software-dev/Logopoeist/lexer"
-import . "github.com/conlang-software-dev/Logopoeist/parser"
-
-const ( // Node Types
-	Production = iota
-	Definition
-	Condition
-	Exclusion
-	SVar
-	CVar
-	Class
-	Phoneme
-	Seq
-	Freq
-	Num
-	Boundary
-)
 
 func parseSVar(lex *Lexer) *Node {
 	lex.Next() // skip $ sigil

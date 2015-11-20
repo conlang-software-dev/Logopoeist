@@ -1,23 +1,23 @@
-package interpreter
+package grammar
 
 import "math/rand"
 import . "github.com/conlang-software-dev/Logopoeist/parser"
 
-type ruleSet struct {
+type RuleSet struct {
 	total   float64
 	weights []float64
 	rules   [][]*Node
 }
 
-type grammar map[string]*ruleSet
+type Grammar map[string]*RuleSet
 
-func (g grammar) addRule(v string, rule []*Node, weight float64) {
+func (g Grammar) AddRule(v string, rule []*Node, weight float64) {
 	if rset, ok := g[v]; ok {
 		rset.total += weight
 		rset.rules = append(rset.rules, rule)
 		rset.weights = append(rset.weights, weight)
 	} else {
-		g[v] = &ruleSet{
+		g[v] = &RuleSet{
 			total:   weight,
 			weights: []float64{weight},
 			rules:   [][]*Node{rule},
@@ -25,7 +25,7 @@ func (g grammar) addRule(v string, rule []*Node, weight float64) {
 	}
 }
 
-func (g grammar) choose(v string, rnd *rand.Rand) []*Node {
+func (g Grammar) choose(v string, rnd *rand.Rand) []*Node {
 	ruleset := g[v]
 	s := rnd.Float64() * ruleset.total
 	var rule ([]*Node)
@@ -40,7 +40,14 @@ func (g grammar) choose(v string, rnd *rand.Rand) []*Node {
 	return rule
 }
 
-func (g grammar) generate(start string, rnd *rand.Rand) []string {
+func (g Grammar) Rules(v string) ([][]*Node, bool) {
+	if ruleset, ok := g[v]; ok {
+		return ruleset.rules, true
+	}
+	return [][]*Node{}, false
+}
+
+func (g Grammar) Generate(start string, rnd *rand.Rand) []string {
 	symbols := g.choose(start, rnd)
 	slots := make([]string, 0, 10)
 	for len(symbols) > 0 {

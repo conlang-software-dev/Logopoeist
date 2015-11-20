@@ -5,16 +5,17 @@ import "math/rand"
 import "strconv"
 import "strings"
 import . "github.com/conlang-software-dev/Logopoeist/parser"
+import . "github.com/conlang-software-dev/Logopoeist/grammar"
+import . "github.com/conlang-software-dev/Logopoeist/types"
 
-type charSet map[string]float64
 
-type ngrams map[string]*charSet
+type ngrams map[string]*CharSet
 
 type model struct {
 	start    string
 	nextvar  int
-	cvars    map[string]*charSet
-	synmodel grammar
+	cvars    Environment
+	synmodel Grammar
 	chrmodel ngrams
 	excmodel ngrams
 	rnd      *rand.Rand
@@ -28,8 +29,8 @@ func interpretNumber(n *Node) float64 {
 	return freq
 }
 
-func interpretClass(n *Node) *charSet {
-	chars := make(charSet)
+func interpretClass(n *Node) *CharSet {
+	chars := make(CharSet)
 	for sn := n.Left; sn != nil; sn = sn.Right {
 		fnode := sn.Left
 		phoneme := fnode.Left.Value
@@ -44,7 +45,7 @@ func interpretClass(n *Node) *charSet {
 	return &chars
 }
 
-func (m *model) getClass(n *Node) *charSet {
+func (m *model) getClass(n *Node) *CharSet {
 	switch n.Type {
 	case CVar:
 		if cset, ok := m.cvars[n.Value]; ok {
@@ -54,7 +55,7 @@ func (m *model) getClass(n *Node) *charSet {
 	case Class:
 		return interpretClass(n)
 	default:
-		panic(fmt.Sprintf("Invalid Node Type for Character Class: %s", toString(n)))
+		panic(fmt.Sprintf("Invalid Node Type for Character Class: %s", n.ToString()))
 	}
 }
 
@@ -88,21 +89,21 @@ func (m *model) addRule(svar string, n *Node) {
 		}
 	}
 
-	m.synmodel.addRule(svar, rule, freq)
+	m.synmodel.AddRule(svar, rule, freq)
 }
 
 func (m *model) generateNgrams(cond_n *Node) []string {
 	last_ngrams := make([]string, 1)
-	
+
 	sn := cond_n
 	if sn.Left.Type == Boundary {
 		last_ngrams[0] = "_"
 		sn = sn.Right
-	}else{
+	} else {
 		last_ngrams[0] = ""
 	}
-	
-	for ; sn != nil; sn = sn.Right { 
+
+	for ; sn != nil; sn = sn.Right {
 		cset := m.getClass(sn.Left)
 		next_ngrams := make([]string, 0, len(last_ngrams))
 		for _, ngram := range last_ngrams {
@@ -119,17 +120,17 @@ func (m *model) generateNgrams(cond_n *Node) []string {
 
 func (m *model) addCondition(cond_n *Node, dist_n *Node) {
 	dist := m.getClass(dist_n)
-	
-	for _, ngram := range m.generateNgrams(cond_n) { 
+
+	for _, ngram := range m.generateNgrams(cond_n) {
 		if ndist, ok := m.chrmodel[ngram]; ok {
 
 			// copy the old map in case it was shared,
-			union := make(charSet, len(*ndist))
+			union := make(CharSet, len(*ndist))
 			m.chrmodel[ngram] = &union
 			for k, v := range *ndist {
 				union[k] = v
 			}
-			
+
 			// then union with the current distribution
 			for k, v := range *dist {
 				if _, ok := union[k]; ok {
@@ -138,7 +139,7 @@ func (m *model) addCondition(cond_n *Node, dist_n *Node) {
 					union[k] = v
 				}
 			}
-		}else{
+		} else {
 			// reference a single common object as much as possible
 			m.chrmodel[ngram] = dist
 		}
@@ -147,21 +148,21 @@ func (m *model) addCondition(cond_n *Node, dist_n *Node) {
 
 func (m *model) addExclusion(cond_n *Node, dist_n *Node) {
 	eset := m.getClass(dist_n)
-	
-	for _, ngram := range m.generateNgrams(cond_n) { 
+
+	for _, ngram := range m.generateNgrams(cond_n) {
 		if cset, ok := m.excmodel[ngram]; ok {
 
 			// create a new map in case the original was shared
-			union := make(charSet, len(*cset))
+			union := make(CharSet, len(*cset))
 			m.chrmodel[ngram] = &union
 
 			for k := range *cset {
 				union[k] = 0
-			}			
+			}
 			for k := range *eset {
 				union[k] = 0
 			}
-		}else{
+		} else {
 			// reference a single common object as much as possible
 			m.excmodel[ngram] = eset
 		}
@@ -187,16 +188,16 @@ func (m *model) Execute(n *Node) {
 	}
 }
 
-func (m *model) lookup(cvar string) *charSet {
+func (m *model) lookup(cvar string) *CharSet {
 	if cset, ok := m.cvars[cvar]; ok {
 		return cset
 	}
 	panic(fmt.Sprintf("#%s is undefined", cvar))
 }
 
-func (m *model) slotDist(cvar string, clist []string) charSet {
+func (m *model) slotDist(cvar string, clist []string) CharSet {
 	sdist := m.lookup(cvar)
-	ndist := make(charSet, len(*sdist))
+	ndist := make(CharSet, len(*sdist))
 	for k, v := range *sdist {
 		ndist[k] = v
 	}
@@ -230,7 +231,7 @@ func (m *model) slotDist(cvar string, clist []string) charSet {
 	return ndist
 }
 
-func (m *model) choose(dist charSet) string {
+func (m *model) choose(dist CharSet) string {
 	var total float64 = 0
 	for _, weight := range dist {
 		total += weight
@@ -250,7 +251,7 @@ func (m *model) choose(dist charSet) string {
 }
 
 func (m *model) Generate() string {
-	slots := m.synmodel.generate(m.start, m.rnd)
+	slots := m.synmodel.Generate(m.start, m.rnd)
 	clist := make([]string, 1, len(slots)+1)
 	clist[0] = "_"
 
@@ -259,5 +260,6 @@ func (m *model) Generate() string {
 		nchar := m.choose(ndist)
 		clist = append(clist, nchar)
 	}
+
 	return strings.Join(clist[1:], "")
 }
