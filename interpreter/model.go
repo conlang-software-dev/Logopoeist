@@ -8,7 +8,6 @@ import . "github.com/conlang-software-dev/Logopoeist/parser"
 import . "github.com/conlang-software-dev/Logopoeist/grammar"
 import . "github.com/conlang-software-dev/Logopoeist/types"
 
-
 type ngrams map[string]*CharSet
 
 type model struct {
@@ -19,6 +18,7 @@ type model struct {
 	chrmodel ngrams
 	excmodel ngrams
 	rnd      *rand.Rand
+	words    map[string]struct{}
 }
 
 func interpretNumber(n *Node) float64 {
@@ -205,7 +205,7 @@ func (m *model) slotDist(cvar string, clist []string) CharSet {
 	// iterate over conditioning ngrams
 	order := len(clist)
 	for j := 1; j <= order; j++ {
-		ngram := strings.Join(clist[order-j:order+1], "")
+		ngram := strings.Join(clist[order-j:order], "")
 
 		// remove any exclusions
 		if edist, ok := m.excmodel[ngram]; ok {
@@ -250,16 +250,54 @@ func (m *model) choose(dist CharSet) string {
 	return chr
 }
 
-func (m *model) Generate() string {
-	slots := m.synmodel.Generate(m.start, m.rnd)
-	clist := make([]string, 1, len(slots)+1)
-	clist[0] = "_"
-
-	for _, cvar := range slots {
-		ndist := m.slotDist(cvar, clist)
-		nchar := m.choose(ndist)
-		clist = append(clist, nchar)
+func (m *model) gen_rec(gen *Generator, clist []string) ([]string, bool) {
+	if gen.IsFinished() {
+		word := strings.Join(clist[1:], "")
+		if _, ok := m.words[word]; !ok {
+			m.words[word] = struct{}{}
+			return clist, true
+		}
+		return []string{}, false
 	}
 
-	return strings.Join(clist[1:], "")
+	select_expansion := func(clist []string) ([]string, bool) {
+		sel, _ := gen.Selector()
+		for {
+			if ngen, ok := sel.Next(); ok {
+				if nclist, ok := m.gen_rec(ngen, clist); ok {
+					return nclist, true
+				}
+			} else {
+				return []string{}, false
+			}
+		}
+	}
+
+	if cvar, ok := gen.Terminal(); ok {
+		ndist := m.slotDist(cvar, clist)
+		for len(ndist) > 0 {
+			nchar := m.choose(ndist)
+			delete(ndist, nchar)
+			if nclist, ok := select_expansion(append(clist, nchar)); ok {
+				return nclist, true
+			}
+
+		}
+	} else {
+		return select_expansion(clist)
+	}
+	return []string{}, false
+}
+
+func (m *model) Generate() ([]string, bool) {
+	gen := m.synmodel.Generator(m.start, m.rnd)
+	clist, ok := m.gen_rec(gen, []string{"_"})
+	if !ok {
+		if len(m.words) == 0 {
+			panic("Inconsistent Model")
+		} else {
+			return []string{}, false
+		}
+	}
+	return clist[1:], true
 }

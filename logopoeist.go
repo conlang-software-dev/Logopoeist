@@ -4,6 +4,7 @@ import "fmt"
 import "bufio"
 import "os"
 import "flag"
+import "strings"
 
 import "github.com/conlang-software-dev/Logopoeist/lexer"
 import "github.com/conlang-software-dev/Logopoeist/parser"
@@ -43,12 +44,13 @@ func main() {
 		interp.Execute(command)
 	}
 
-	words := make(map[string]struct{}, wcount)
-	for len(words) < wcount {
-		word := interp.Generate()
-		if _, ok := words[word]; !ok {
-			fmt.Printf("%s\n", word)
-			words[word] = struct{}{}
+	for i := 0; i < wcount; i++ {
+		clist, ok := interp.Generate()
+		if !ok {
+			fmt.Printf("Could Not Generate Additional Unique Words")
+			break
 		}
+		word := strings.Join(clist, "")
+		fmt.Printf("%s\n", word)
 	}
 }

@@ -14,5 +14,6 @@ func Interpreter() *model {
 		chrmodel: make(ngrams),
 		excmodel: make(ngrams),
 		rnd:      rand.New(rand.NewSource(time.Now().UnixNano())),
+		words:    make(map[string]struct{}),
 	}
 }
