@@ -9,8 +9,19 @@ Logopoeist is a command-line program, and takes the following arguments:
 
 * `-file {string}`: the name of an input configuration file. If absent, Logopoeist will try to read configuration commands from standard input.
 * `-n {int}`: the number of random words to output. Defaults to 10.
+* `-lmin {uint}`: the minimum length of words to output. Defaults to 0.
+* `-lmax {uint}`: the maximum length of words to output. Defaults to unbounded.
 
 A sample configuration for a strict-CV language with vowel harmony is provided in `test.lgp`.
+
+Word Generation
+---------------
+
+Logopoeist generates words by randomly selecting phoneme/grapheme tokens from a distribution that is calculated for each position by intersecting information from an n-gram character model and syllable structure model. An incremental Earley chart parser is used to keep track of all of the possible partial-parses that satisfy the syllable structure rules given whatever phonemes have been generated so far; the parser state is examined to produce a combined distribution for all possible phonemes that could be added and still produce a valid parse, weighted by the probability of each partial parse in the Earley chart at that position. The n-gram model is then used to determine what distribution of phonemes would be allowed in the same position given the previous context. These two distributions are then intersected, and a random phoneme is selected from the resulting joint distribution to fill in that slot, which then further constrains the possible parses and n-gram environments for the next position. Word boundaries are produced (thus terminating the productino of one word) by considering the relative total probability of all complete parses vs. all incomplete parses at a given position; that ratio is then used to make a weighted random choice to produce a completed word or to keep going.
+
+Several possible situations can arise that result in a failed production- a state where there are no possible phonemes that can be added, but the word also isn't complete according to the syllable structure rules. These include things like disjoint distributions produced by the n-gram and syllable structure models, production of a word that is too short or too long compared to the limits set by the user, or production of a duplicate word that's already been seen before. In any of these cases, Logopoeist will use recursive back-tracking; the parser state is rewound, the last produced phoneme is discarded and removed from the distribution so that it cannot be selected for the same environment again, and Logopoeist tries again with a different randomly selected phoneme (or, in the case of a too-short word, the word boundary is discarded and the system starts the next-phoneme selection process for the first time). This guarantees that the word generator will make progress and produce new output in finite time, without retracing failed paths that it had already explored, while still matching whatever number of output words were requested; i.e., it does not have to randomly generate possibly-colliding words for an unbounded amount of time, hoping to accumulate as many as you asked for; nor does it run a fixed number of cycles, showing you maybe as many unique words as you requested, but maybe less, after filtering duplicates. Additionally, the recursive backtracking strategy allows Logopoeist to detect when it has completely exhausted the finite number of options permitted in a certain range, and inform you of that fact, rather than freezing up while continuing to look for more options that don't exist. Unfortunately, however, it cannot detect infinite grammars- syllable structure rules that do not permit any finite words. If you're not careful, and feed it an infinite grammar with no maximum word length specified, it will loop forever (if a maximum word length is specified, it will helpfully inform you that no valid words exist in the given range).
+
+The system does start to slow down eventually, due to increased need for backtracking, after generating large numbers of unique words. For practical purposes, however, it is quite fast. For example, it can generate all 6156 possible 8-letter words allowed by the sample configuration file in about 15 seconds, and then helpfully inform you that there are no more valid words of that length.
 
 Configuration
 -------------
@@ -60,11 +71,9 @@ A variant on conditional probability rules can be used to indicate that certain 
 	_ {C-class} ... !> {C-class}
 
 Note the differently shaped arrow- `!>` instead of `->`. In these rules, frequencies are ignored in both conditioning and conditional classes; members of the conditional class are assigned zero probability after any conditioning n-grams derived from these rules, overriding whatever other distributions they might have had due to other rules.
+ 
 
-Word Generation
----------------
-
-When generating a word, Logopoeist first creates a phonotactic template for that word using the probabilistic word grammar by replacing syntax variables until a list of only character classes (indicated either by variables or literal character classes) is left.
+first creates a phonotactic template for that word using the probabilistic word grammar by replacing syntax variables until a list of only character classes (indicated either by variables or literal character classes) is left.
 
 At that point, the template is filled in from left-to-right by
 

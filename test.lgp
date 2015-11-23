@@ -7,7 +7,7 @@ $W2 -> $S2     ; Thus, 1/2 of all words are 1 syllable, 1/4 are 2 syllables, etc
 $S1 -> #C #V1  ; A type-1 syllable consist of a consonant and a type-1 vowel
 $S2 -> #C #V2  ; And similarly for type-2 syllables
 
-; This means that all syllables are striclty CV,
+; This means that all syllables are strictly CV,
 ; and all syllables in one word have the same kind
 ; of vowel, which is how we enforce vowel harmony
 
