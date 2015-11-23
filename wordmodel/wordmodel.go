@@ -173,15 +173,7 @@ func (m *model) Generate(min int, max int) ([]string, bool) {
 	clist[0] = "_"
 
 	ep := NewParser(m.env, m.synmodel, m.start)
-	clist, ok := m.gen_rec(ep, clist, min, max)
-	if !ok {
-		if len(m.words) == 0 {
-			panic("Inconsistent Model")
-		} else {
-			return nil, false
-		}
-	}
-	return clist, true
+	return m.gen_rec(ep, clist, min, max)
 }
 
 func WordModel() *model {

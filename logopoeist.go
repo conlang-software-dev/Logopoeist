@@ -41,11 +41,11 @@ func main() {
 		file = os.Stdin
 	}
 
-	/*defer func() {
+	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("Error: %s\n", err)
 		}
-	}()*/
+	}()
 
 	lex := lexer.Lex(bufio.NewReader(file), switchState)
 	model := WordModel()
@@ -54,12 +54,25 @@ func main() {
 	}
 
 	for i := 0; i < wcount; i++ {
-		clist, ok := model.Generate(min, max)
-		if !ok {
-			fmt.Printf("Could Not Generate Additional Unique Words")
-			break
+		if clist, ok := model.Generate(min, max); ok {
+			word := strings.Join(clist, "")
+			fmt.Printf("%s\n", word)
+			continue
 		}
-		word := strings.Join(clist, "")
-		fmt.Printf("%s\n", word)
+
+		if min == 0 && max == 0 {
+			if i == 0 {
+				fmt.Printf("No Valid Words Found. Model May Be Inconsistent.")
+			} else {
+				fmt.Printf("Exhausted Unique Words.")
+			}
+		} else {
+			if i == 0 {
+				fmt.Printf("No Valid Words Found in the Given Range.")
+			} else {
+				fmt.Printf("Exhausted Unique Words in the Given Range.")
+			}
+		}
+		return
 	}
 }
