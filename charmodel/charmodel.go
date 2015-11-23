@@ -62,7 +62,7 @@ func (m *CharModel) CalcDistribution(base *CharSet, context []string) CharSet {
 	ndist := make(CharSet, len(*base))
 	for k, v := range *base {
 		ndist[k] = v
-	} 
+	}
 
 	// iterate over conditioning ngrams
 	order := len(context)

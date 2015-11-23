@@ -45,7 +45,7 @@ type EarleyParser struct {
 	parent   *EarleyParser
 	level    uint
 	synmodel Grammar
-	env    Environment
+	env      Environment
 	root     string
 	column   []*state
 	finished bool
@@ -70,7 +70,7 @@ func newLevel(p *EarleyParser) *EarleyParser {
 	return &EarleyParser{
 		parent:   p,
 		level:    p.level + 1,
-		env:    p.env,
+		env:      p.env,
 		synmodel: p.synmodel,
 		root:     p.root,
 		column:   []*state{},
@@ -128,7 +128,7 @@ func (chart *EarleyParser) scan(s *state, token string) {
 	if term.Type != CVar {
 		return
 	}
-	
+
 	chars, ok := chart.env.Lookup(term.Value)
 	if !ok {
 		return
@@ -219,7 +219,7 @@ func (p *EarleyParser) TerminationProbability() float64 {
 	done_weight := 0.0
 	cont_weight := 0.0
 	for _, s := range p.column {
-		if s.iscomplete(){
+		if s.iscomplete() {
 			if s.start == 0 && s.lhs == p.root {
 				done_weight += s.weight
 			}
@@ -233,11 +233,15 @@ func (p *EarleyParser) TerminationProbability() float64 {
 func (p *EarleyParser) AllowedTokens() *CharSet {
 	cset := make(CharSet)
 	for _, s := range p.column {
-		if s.iscomplete() { continue }
-		
+		if s.iscomplete() {
+			continue
+		}
+
 		term := s.rhs[s.dot]
-		if term.Type != CVar { continue }
-		
+		if term.Type != CVar {
+			continue
+		}
+
 		if sset, ok := p.env.Lookup(term.Value); ok {
 			for k, v := range sset.Weights {
 				if _, ok := cset[k]; ok {

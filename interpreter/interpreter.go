@@ -29,7 +29,7 @@ func InterpretClass(n *Node) *CharClass {
 		}
 	}
 	return &CharClass{
-		List: list,
+		List:    list,
 		Weights: weights,
 	}
 }

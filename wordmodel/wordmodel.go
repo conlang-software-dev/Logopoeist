@@ -53,7 +53,7 @@ func (m *model) generateNgrams(cond_n *Node) [][]string {
 	} else {
 		last_ngrams = append(last_ngrams, []string{})
 	}
-	
+
 	for ; sn != nil; sn = sn.Right {
 		cclass := m.env.GetClass(sn.Left)
 		next_ngrams := make([][]string, 0, cap(last_ngrams)*len(cclass.List))
@@ -106,7 +106,7 @@ func (m *model) Execute(n *Node) {
 
 func (m *model) gen_rec(ep *EarleyParser, clist []string, min int, max int) ([]string, bool) {
 
-	finalize := func() ([]string, bool) {	
+	finalize := func() ([]string, bool) {
 		final := clist[1:]
 		word := strings.Join(final, "")
 		if _, ok := m.words[word]; !ok {
@@ -119,16 +119,16 @@ func (m *model) gen_rec(ep *EarleyParser, clist []string, min int, max int) ([]s
 	recurse := func() ([]string, bool) {
 		if max > 0 && len(clist) > max {
 			return nil, false
-		} 
+		}
 
 		base := ep.AllowedTokens()
 		dist := m.chrmodel.CalcDistribution(base, clist)
-		
+
 		total := 0.0
 		for _, w := range dist {
 			total += w
 		}
-		
+
 		for len(dist) > 0 {
 			r := m.rnd.Float64() * total
 			for c, w := range dist {
@@ -136,7 +136,7 @@ func (m *model) gen_rec(ep *EarleyParser, clist []string, min int, max int) ([]s
 				if r <= 0 {
 					total -= w
 					delete(dist, c)
-		
+
 					if np, ok := ep.Next(c); ok {
 						if nclist, ok := m.gen_rec(np, append(clist, c), min, max); ok {
 							return nclist, true
@@ -179,7 +179,7 @@ func (m *model) Generate(min int, max int) ([]string, bool) {
 func WordModel() *model {
 	return &model{
 		start:    "",
-		env:    make(Environment),
+		env:      make(Environment),
 		synmodel: make(Grammar),
 		chrmodel: NewModel(),
 		rnd:      rand.New(rand.NewSource(time.Now().UnixNano())),

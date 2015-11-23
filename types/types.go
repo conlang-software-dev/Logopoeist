@@ -3,7 +3,7 @@ package types
 type CharSet map[string]float64
 
 type CharClass struct {
-	List []string
+	List    []string
 	Weights CharSet
 }
 

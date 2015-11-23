@@ -25,7 +25,7 @@ type Node struct {
 	Right *Node
 }
 
-func (n * Node) ToString() string {
+func (n *Node) ToString() string {
 	if n == nil {
 		return ""
 	}

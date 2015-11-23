@@ -28,7 +28,7 @@ func main() {
 		fmt.Printf("lmin must be less than lmax\n")
 		return
 	}
-	
+
 	if fname != "" {
 		var err error
 		file, err = os.Open(fname)
